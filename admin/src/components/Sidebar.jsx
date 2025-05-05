@@ -1,6 +1,6 @@
 import { Bike, Building2, House, Package } from "lucide-react";
 import React from "react";
-import logo from "../assets/logo.png";
+import shippify_logo from "../assets/shippify-logo.png";
 import {
   BsLayoutSidebarInset,
   BsLayoutSidebarInsetReverse,
@@ -35,7 +35,7 @@ const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
             )}
           </button>
           {/* <h2 className="text-2xl font-bold text-third md:block hidden"> */}
-          <img className="h-18  md:block hidden" src={logo} />
+          <img className=" h-14  md:block hidden" src={shippify_logo} />
           {/* </h2> */}
         </div>
         <ul className="my-1 px-4">

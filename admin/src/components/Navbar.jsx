@@ -7,7 +7,7 @@ import {
 } from "react-icons/bs";
 import { logout } from "../http/http";
 import { useNavigate, useNavigation } from "react-router-dom";
-import logo from "../assets/logo.png";
+import logo from "../assets/shippify-logo.png";
 const Navbar = ({
   isSidebarOpen,
   setSidebarOpen,
@@ -41,7 +41,7 @@ const Navbar = ({
             )}
           </button>
         </div>
-        <img src={logo} className="w-18 md:hidden block" alt="logo" />
+        <img src={logo} className=" w-24 md:hidden block" alt="logo" />
         <div className="relative">
           <button
             onClick={toggleProfileMenu}

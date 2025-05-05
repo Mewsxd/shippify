@@ -5,7 +5,7 @@ import {
   BsLayoutSidebarInsetReverse,
 } from "react-icons/bs";
 import { Link, useLocation } from "react-router-dom";
-import logo from "../assets/logo.png";
+import logo from "../assets/shippify-logo.png";
 
 const Sidebar = ({ isSidebarOpen, setSidebarOpen }) => {
   const location = useLocation();
