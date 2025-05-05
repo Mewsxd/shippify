@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import amg2 from "./assets/amg7.svg";
 import { FaSpinner } from "react-icons/fa";
 import { login } from "./http/http";
-import logo from "./assets/logo.png";
+import shippify_logo from "./assets/shippify-logo.png";
 
 const AuthPage = () => {
   const emailRef = useRef(null);
@@ -53,10 +53,10 @@ const AuthPage = () => {
         />
         <div className="absolute z-50 top-10 left-5 block lg:hidden">
           {/* <h1 className="text-4xl font-bold text-white drop-shadow-[0_4px_10px_rgba(255,255,255,0.6)]">
-            DeliverX - Admin
+            Shippify - Admin
           </h1> */}
           <img
-            src={logo}
+            src={shippify_logo}
             className="max-w-[200px] drop-shadow-[0_4px_10px_rgba(255,255,255,0.8)]"
             alt="logo"
           />
@@ -111,14 +111,20 @@ const AuthPage = () => {
       </div>
 
       <div className="right flex-[1.5] overflow-hidden relative hidden lg:block">
+        <div className="absolute z-20 top-10 left-5">
+          {/* <h1 className="text-4xl font-bold text-white drop-shadow-[0_4px_10px_rgba(255,255,255,0.6)]">
+            Shippify - Admin
+          </h1> */}
+        </div>
         <img
           src={amg2}
           className="max-w-7xl h-screen object-cover brightness-60"
           alt="Dashboard Mockup"
         />
+
         <div className="absolute z-20 top-10 left-5">
           <img
-            src={logo}
+            src={shippify_logo}
             className="max-w-[300px] drop-shadow-[0_4px_10px_rgba(255,255,255,0.7)]"
             alt="logo"
           />

@@ -5,7 +5,8 @@ import amg2 from "./assets/amg7.svg";
 import { FaSpinner } from "react-icons/fa";
 import { login } from "./http/http";
 import MainContext from "./store/MainContext";
-import logo from "./assets/logo.png";
+import logo from "./assets/shippify-logo.png";
+
 const AuthPage = () => {
   const emailRef = useRef(null);
   const passwordRef = useRef(null);

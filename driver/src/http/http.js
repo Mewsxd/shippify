@@ -1,5 +1,5 @@
-// export const SERVER_URL = "http://localhost:3000";
-export const SERVER_URL = "https://delivery-tracker-server.onrender.com";
+export const SERVER_URL = "http://localhost:3000";
+// export const SERVER_URL = "https://delivery-tracker-server.onrender.com";
 
 export const getAllDeliveries = async () => {
   try {
