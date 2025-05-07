@@ -9,7 +9,7 @@ This project is a web-based delivery management system featuring two separate po
 ## 🔗 Live Links
 
 - **Admin Dashboard**: [View Admin Panel](https://taupe-dasik-3af313.netlify.app/)  
-  - **Email**: `admin@example.com`  
+  - **Email**: `admin@gmail.com`  
   - **Password**: `sysadmin648`
 
 - **Driver Dashboard**: [View Driver Panel](https://genuine-kulfi-abb366.netlify.app/)  
