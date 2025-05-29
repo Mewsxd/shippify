@@ -20,7 +20,7 @@ This project is a web-based delivery management system featuring two separate po
 
 ## 🛠️ Tech Stack
 
-- Frontend: React (or your framework)
+- Frontend: React
 - Backend: Node.js / Typescript / Firebase /
 - Database: Firestore
 
@@ -38,7 +38,7 @@ The Admin Dashboard provides full control over the operational side of the deliv
 
 - **Driver Management**:  
   - Add new drivers to the system  
-  - Update driver details (e.g., name, contact, assigned company)  
+  - Update driver details (e.g., name, contact, delivery details)  
   - Remove drivers when no longer needed  
 
 - **Order Management**:  
