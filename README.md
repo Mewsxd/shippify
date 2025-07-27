@@ -12,7 +12,7 @@ This project is a web-based delivery management system featuring two separate po
   - **Email**: `admin@gmail.com`  
   - **Password**: `sysadmin648`
 
-- **Driver Dashboard**: [View Driver Panel](https://genuine-kulfi-abb366.netlify.app/)  
+- **Driver Dashboard**: [View Driver Panel](https://ornate-jalebi-177927.netlify.app/)  
   - **Email**: mnm@gmail.com`  
   - **Password**: `mnm123`
 
