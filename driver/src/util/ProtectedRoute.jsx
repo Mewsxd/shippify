@@ -17,27 +17,28 @@ const ProtectedRoute = ({ children }) => {
     retry: false,
   });
   const { setUserData } = useContext(MainContext);
-  // console.log("Loading?", isLoading);
-  // console.log("Fetching?", isFetching);
 
   useEffect(() => {
+    // When the auth check is done
     if (!isFetching) {
+      // If user is not authenticated, redirect to login page
       if (!user) {
-        // console.log("No user");
         navigate("/auth");
       } else {
+        // If user is authenticated, set user data in context
         setUserData(user);
-        // console.log("User", user);
       }
     }
   }, [isFetching, navigate, setUserData, user]);
 
+  // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className=" p-6 font-semibold text-lg font-outfit">Loading...</div>
+      <div className="p-6 font-semibold text-lg font-outfit">Loading...</div>
     );
   }
 
+  // If authenticated, render the protected children components
   return children;
 };
 

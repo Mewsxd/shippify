@@ -8,9 +8,9 @@ import MainContext from "../store/MainContext";
 
 const MyDeliveries = () => {
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState("pending");
   const [currentCursor, setCurrentCursor] = useState(null);
-  const [cursorHistory, setCursorHistory] = useState([null]); // Store cursor history for navigation
+  const [cursorHistory, setCursorHistory] = useState([null]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -24,30 +24,28 @@ const MyDeliveries = () => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Set initial width
+    // Set the container width on initial render
     setContainerWidth(containerRef.current.offsetWidth);
 
-    // Create ResizeObserver to watch container size changes
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         setContainerWidth(entry.contentRect.width);
       }
     });
 
+    // Observe container for resize events
     resizeObserver.observe(containerRef.current);
 
-    // Cleanup
+    // Cleanup resize observer when component is unmounted
     return () => {
       if (containerRef.current) {
         resizeObserver.unobserve(containerRef.current);
       }
     };
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
-  // Determine if we should use table or card view based on container width
   const useTableView = containerWidth >= 768;
 
-  // Pagination and data fetching
   const PAGE_SIZE = 10;
 
   const { data, isLoading, isError } = useQuery({
@@ -55,15 +53,13 @@ const MyDeliveries = () => {
       getUserDeliveries(currentCursor, search, filter, userData?.id),
     queryKey: ["my-deliveries", currentCursor, search, filter],
     onSuccess: (data) => {
-      // Update total count when we get new data
       if (data?.totalCount) {
         setTotalCount(data.totalCount);
       }
     },
-    enabled: !!userData?.id, // Only runs when userData.id is available
+    enabled: !!userData?.id,
   });
 
-  // Calculate total pages
   const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 0;
 
   let deliveriesData = data?.deliveries || [];
@@ -72,7 +68,6 @@ const MyDeliveries = () => {
 
   const handleSearch = () => {
     setSearch(searchInput);
-    // Reset pagination when searching
     setCurrentCursor(null);
     setCurrentPage(1);
     setCursorHistory([null]);
@@ -81,16 +76,13 @@ const MyDeliveries = () => {
 
   const handleFilter = (e) => {
     setFilter(e.target.value);
-    // Reset pagination when filtering
     setCurrentCursor(null);
     setCurrentPage(1);
     setCursorHistory([null]);
   };
 
-  // Pagination handlers
   const handleNextPage = () => {
     if (hasNextPage) {
-      // Add the next cursor to our history
       const newHistory = [...cursorHistory];
       if (nextCursor && !newHistory.includes(nextCursor)) {
         newHistory.push(nextCursor);
@@ -103,35 +95,27 @@ const MyDeliveries = () => {
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      // Go back to the previous cursor in our history
       const newPage = currentPage - 1;
-      const prevCursor = cursorHistory[newPage - 1]; // Arrays are 0-indexed
+      const prevCursor = cursorHistory[newPage - 1];
       setCurrentCursor(prevCursor);
       setCurrentPage(newPage);
     }
   };
 
   function formatTimestamp(timestamp) {
-    const date = new Date(timestamp * 1000); // Convert to milliseconds
+    const date = new Date(timestamp * 1000);
 
     const day = String(date.getUTCDate()).padStart(2, "0");
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
     const year = date.getUTCFullYear();
 
     return `${month}-${day}-${year}`;
   }
 
-  // if (isError) {
-  //   return (
-  //     <p className="flex justify-center my-4">
-  //       There was an error fetching orders, please try again!
-  //     </p>
-  //   );
-  // }
   return (
     <>
       <div className="text-2xl font-bold px-6 pt-6 text-third font-outfit">
-        Dashboard
+        My Deliveries
       </div>
       <div className="border h-full overflow-y-hidden border-gray-200 rounded-lg shadow-md bg-white m-4 max-xs:m-2 font-outfit flex flex-col">
         <div className="flex flex-col sm:flex-row gap-4 p-4 max-xs:p-3 w-full">
@@ -154,8 +138,7 @@ const MyDeliveries = () => {
               Search
             </button>
           </div>
-          {/* Filter Dropdown */}
-          <div className="min-w-[150px] w-fit">
+          {/* <div className="min-w-[150px] w-fit">
             <select
               className="w-full border px-4 py-2 rounded-md text-gray-700 focus:outline-none focus:ring-blue-200 focus:border-blue-400 outline-0 border-gray-200"
               value={filter}
@@ -167,14 +150,13 @@ const MyDeliveries = () => {
               <option value="completed">Completed</option>
               <option value="unavailable">Unavailable</option>
             </select>
-          </div>
+          </div> */}
         </div>
         <div
           ref={containerRef}
           className="w-full mt-2 overflow-y-scroll custom-scrollbar overflow-hidden border-t border-b border-gray-200"
         >
           {useTableView ? (
-            // Table view for wider containers
             <div className="w-full flex-grow">
               <table className="w-full min-w-full table-fixed">
                 <thead className="sticky top-0 bg-gray-100 shadow z-10">
@@ -241,7 +223,6 @@ const MyDeliveries = () => {
               </table>
             </div>
           ) : (
-            // Card view for narrower containers
             <div className="w-full flex-grow">
               {isLoading ? (
                 <div className="p-4 font-semibold">
@@ -309,7 +290,6 @@ const MyDeliveries = () => {
           )}
         </div>
 
-        {/* Pagination Controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-200">
           <div className="text-sm text-gray-600">
             Page {currentPage} {totalPages > 0 ? `of ${totalPages}` : ""}

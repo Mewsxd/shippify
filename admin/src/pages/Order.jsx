@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -22,7 +22,6 @@ const schema = yup
       .string()
       .email("Invalid email format")
       .required("Email is required"),
-    // Remove required here. We'll enforce it conditionally in a test below.
     deliveryType: yup.string(),
     boxQuantity: yup
       .number()
@@ -112,7 +111,6 @@ const schema = yup
       otherwise: (schema) => schema.notRequired(),
     }),
   })
-  // Enforce: if none of the quantity fields has a value > 0, then deliveryType is required.
   .test(
     "deliveryType-required-if-no-quantity",
     "Delivery type is required if no quantity field has a value above 0",
@@ -145,7 +143,6 @@ const schema = yup
       return true;
     }
   )
-  // First test for (othersQuantity, othersDescription) pair
   .test(
     "others-pair",
     "Both Others Quantity and Description must be provided if either one is filled",
@@ -164,11 +161,9 @@ const schema = yup
       return true;
     }
   )
-  // Keep this test for any further interdependent validations
   .test("conditional-validations", null, function (values) {
     return true;
   })
-  // Second test for (othersQuantity, othersDescription) pair targeting specific path
   .test(
     "others-pair-specific",
     "Both Others Quantity and Description must be provided if either one is filled",
@@ -190,7 +185,7 @@ const schema = yup
     }
   );
 
-const Order = ({ totalPages = 10, initialPage = 1 }) => {
+const Order = () => {
   const [isInitiallyPending, setIsInitiallyPending] = useState();
   const { orderId } = useParams();
   const [isEditable, setIsEditable] = useState(false);
@@ -215,7 +210,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
     enabled: !!orderId,
   });
 
-  // Prefill form data once data is available
   useEffect(() => {
     if (data) {
       if (
@@ -226,8 +220,8 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
       } else {
         setIsInitiallyPending(false);
       }
-      reset(data); // Prefill form fields
-      setOriginalData(data); // Store original data for cancel functionality
+      reset(data);
+      setOriginalData(data);
     }
   }, [data, reset]);
 
@@ -240,7 +234,7 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
       queryClient.invalidateQueries({
         queryKey: [`order-${orderId}`],
       });
-      setIsEditable(false); // Disable editing after successful submission
+      setIsEditable(false);
     },
     onError: () => {
       alert("Error occurred while updating your delivery, please try again!");
@@ -261,39 +255,15 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
         alert("Error occurred while updating your delivery, please try again!");
       },
     });
-  // const onSubmit = async (formData) => {
-  //   console.log("Delivery Data:", formData);
-  //   if (othersDescriptionValue && othersQuantityValue === "") {
-  //     alert("Please provide a valid quantity for the other delivery type.");
-  //     return;
-  //   }
-
-  //   if (!othersDescriptionValue && othersQuantityValue > 0) {
-  //     alert("Please provide a valid description for the other delivery type.");
-  //     return;
-  //   }
-
-  //   console.log(typeof othersQuantityValue);
-  //   // delete formData.id;
-  //   // mutate({ data: formData, id: orderId });
-  // };
 
   const normalizeNumber = (value) => (value ? Number(value) || 0 : 0);
 
   const onSubmit = async (formData) => {
-    // console.log("Delivery Data:", formData);
-
-    // Normalize quantity values
     formData.bagQuantity = normalizeNumber(formData.bagQuantity);
     formData.boxQuantity = normalizeNumber(formData.boxQuantity);
     formData.envelopeQuantity = normalizeNumber(formData.envelopeQuantity);
     formData.toteQuantity = normalizeNumber(formData.toteQuantity);
     formData.othersQuantity = normalizeNumber(formData.othersQuantity);
-
-    // Validation checks
-    // if (formData.deliveryStatus === "unavailable") {
-    //     formData.unavailabilityReason = formData.unavailabilityReason;
-    // }
 
     if (formData.othersDescription && formData.othersQuantity === 0) {
       alert("Please provide a valid quantity for the other delivery type.");
@@ -305,9 +275,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
       return;
     }
 
-    // console.log("Normalized Delivery Data:", formData);
-
-    // delete formData.id;
     mutate({ data: formData, id: orderId });
   };
 
@@ -316,13 +283,13 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
   };
 
   const handleCancel = () => {
-    reset(originalData); // Reset form to original data
-    setIsEditable(false); // Exit edit mode
+    reset(originalData);
+    setIsEditable(false);
   };
 
   const deliveryType = watch("deliveryType");
   const deliveryStatus = watch("deliveryStatus");
-  // Clear deliveryTypeDescription when type is not "Others"
+
   useEffect(() => {
     if (deliveryType !== "Others") {
       setValue("deliveryTypeDescription", "");
@@ -347,16 +314,12 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
   const confirmDelete = () => {
     deleteDeliveryMutate(orderId);
   };
-  ///////
   const selectedDeliveryType = watch("deliveryType");
   const boxQuantityValue = watch("boxQuantity");
   const bagQuantityValue = watch("bagQuantity");
   const toteQuantityValue = watch("toteQuantity");
   const envelopeQuantityValue = watch("envelopeQuantity");
   const othersQuantityValue = watch("othersQuantity");
-  const othersDescriptionValue = watch("othersDescription");
-  ////////
-
   return (
     <>
       <div className="text-2xl font-bold px-6 pt-6 text-third relative font-outfit">
@@ -426,7 +389,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
               </div>
             </div>
 
-            {/* /////////////////////////////////// */}
             <div className="space-y-3">
               {isEditable && (
                 <>
@@ -571,20 +533,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                         placeholder="Enter number of boxes"
                       />
                     </div>
-                    {/* <div>
-                      <button
-                        onClick={() =>
-                          saveDeliveryHandler({
-                            deliveryType: "Box",
-                            deliveryQuantity: boxQuantityValue,
-                          })
-                        }
-                        type="button"
-                        className="py-2 px-4 bg-green-500 rounded-lg"
-                      >
-                        Save
-                      </button>
-                    </div> */}
                   </div>
                   {bagQuantityValue > 0 && (
                     <div className="grid sm:grid-cols-2 gap-4 items-end">
@@ -754,7 +702,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                           <input
                             type="text"
                             {...register("othersDescription")}
-                            // value={storeDeliveryDescription}
                             disabled={!isEditable}
                             className={inputStyle}
                             placeholder="Specify Delivery Type"
@@ -860,7 +807,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                           <input
                             type="text"
                             {...register("othersDescription")}
-                            // value={storeDeliveryDescription}
                             disabled={!isEditable}
                             className={inputStyle}
                             placeholder="Specify Delivery Type"
@@ -967,7 +913,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                           <input
                             type="text"
                             {...register("othersDescription")}
-                            // value={storeDeliveryDescription}
                             disabled={!isEditable}
                             className={inputStyle}
                             placeholder="Specify Delivery Type"
@@ -1076,7 +1021,6 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                       <input
                         type="text"
                         {...register("othersDescription")}
-                        // value={storeDeliveryDescription}
                         disabled={!isEditable}
                         className={inputStyle}
                         placeholder="Specify Delivery Type"
@@ -1099,21 +1043,16 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                 </>
               )}
             </div>
-            {/* /////////////////////////////////// */}
 
             <div>
               <label className="block mb-1 text-text1">Delivery Status</label>
-              <select
-                {...register("deliveryStatus")}
-                className={inputStyle}
-                disabled={!isEditable}
-              >
-                <option value="">Select status</option>
-                <option value="unavailable">Unavailable</option>
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-              </select>
-              <p className="text-red-500">{errors.deliveryStatus?.message}</p>
+              <label className="block mb-1">
+                {deliveryStatus === "pending"
+                  ? "Pending"
+                  : deliveryStatus === "completed"
+                  ? "Completed"
+                  : "Unavailable"}
+              </label>
             </div>
 
             {deliveryStatus === "unavailable" && (
@@ -1140,20 +1079,7 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                 </p>
               </div>
             )}
-            {/* /////////////////////// */}
-            {/* {data.deliverydeliveryRecipientName !== "undefined" ? (
-                    <p className="w-full p-2 border border-none rounded-lg bg-gray-50">
-                      {data.deliverydeliveryRecipientName}
-                    </p>
-                  ) : data.deliverydeliveryRecipientName === null ? (
-                    <p className="w-full p-2 border border-none rounded-lg bg-gray-50">
-                      Unavailable
-                    </p>
-                  ) : (
-                    <p className="w-full p-2 border border-none rounded-lg bg-gray-50">
-                      {data.deliverydeliveryRecipientName}
-                    </p>
-                  )} */}
+
             {deliveryStatus === "completed" && (
               <>
                 <div>
@@ -1189,18 +1115,24 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                             <label className="block mb-1 text-text1">
                               Proof Of Delivery
                             </label>
-                            <img
-                              src={`${SERVER_URL}${data.podImage}`}
-                              alt="Uploaded"
-                              style={{
-                                display: "block",
-                                border: "1px solid black",
-                                width: "150px",
-                                minHeight: "50px", // Minimum height
-                                maxHeight: "150px", // Maximum height
-                                objectFit: "contain", // Ensure it scales properly without distortion
-                              }}
-                            />
+                            <div className="space-y-4">
+                              {data.podImages.map((podImage) => {
+                                return (
+                                  <img
+                                    src={`${SERVER_URL}${podImage}`}
+                                    alt="Uploaded"
+                                    style={{
+                                      display: "block",
+                                      border: "1px solid black",
+                                      width: "150px",
+                                      minHeight: "50px",
+                                      maxHeight: "150px",
+                                      objectFit: "contain",
+                                    }}
+                                  />
+                                );
+                              })}
+                            </div>
                           </div>
                         }
                         {
@@ -1226,92 +1158,9 @@ const Order = ({ totalPages = 10, initialPage = 1 }) => {
                     </>
                   )}
                 </div>
-                {/* <div className="w-full flex sm:flex-row flex-col mt-4 items-start justify-start gap-4 sm:gap-6">
-                  <div className="">
-                    <label className="block mb-1 text-text1">
-                      Proof Of Delivery
-                    </label>
-                    <img
-                      src={`${SERVER_URL}${data.podImage}`}
-                      alt="Delivery image"
-                      style={{
-                        display: "block",
-                        border: "1px solid black",
-                        width: "150px",
-                        minHeight: "50px", // Minimum height
-                        maxHeight: "150px", // Maximum height
-                        objectFit: "contain", // Ensure it scales properly without distortion
-                      }}
-                    />
-                  </div>
-
-                  <div className="">
-                    <div className="">
-                      <label className="block mb-1 text-text1">Signature</label>
-                      <img
-                        src={`${SERVER_URL}${data.signatureImage}`}
-                        alt="Signature image"
-                        style={{
-                          display: "block",
-                          border: "1px solid black",
-                          width: "150px",
-                          minHeight: "50px", // Minimum height
-                          maxHeight: "150px", // Maximum height
-                          objectFit: "contain", // Ensure it scales properly without distortion
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div> */}
               </>
             )}
 
-            {/* /////////////////////// */}
-
-            {/* {isInitiallyPending && (
-              <div className="w-full flex justify-between items-center mt-8">
-                {!isEditable ? (
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={handleEdit}
-                      className="py-2 px-6 bg-third text-white rounded-lg cursor-pointer"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowDeleteModal(true);
-                      }}
-                      className="py-2 px-6 bg-red-600 text-white rounded-lg cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex justify-between w-full gap-4">
-                    <div className="flex gap-4">
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={handleCancel}
-                        className="w-fit border text-text1 px-4 py-2 rounded-lg hover:bg-gray-200 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isPending}
-                      className="w-fit py-2 px-6 bg-third text-white rounded-lg"
-                    >
-                      {isPending ? "Updating..." : "Update"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )} */}
             <div className="w-full flex justify-between items-center mt-8">
               {isInitiallyPending &&
               deliveryStatus !== "completed" &&

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -7,6 +7,7 @@ import { getDeliveryById, SERVER_URL, updateDelivery } from "../http/http";
 import { useNavigate, useParams } from "react-router-dom";
 import SignaturePad from "../components/SignaturePad";
 import { RxCross1 } from "react-icons/rx";
+import MainContext from "../store/MainContext";
 
 const schema = yup
   .object()
@@ -20,7 +21,6 @@ const schema = yup
       .email("Invalid email format")
       .required("Email is required"),
 
-    // Remove required here. We'll enforce it conditionally in a test below.
     deliveryType: yup.string(),
     boxQuantity: yup
       .number()
@@ -110,7 +110,6 @@ const schema = yup
       otherwise: (schema) => schema.notRequired(),
     }),
   })
-  // Enforce: if none of the quantity fields has a value > 0, then deliveryType is required.
   .test(
     "deliveryType-required-if-no-quantity",
     "Delivery type is required if no quantity field has a value above 0",
@@ -143,7 +142,6 @@ const schema = yup
       return true;
     }
   )
-  // First test for (othersQuantity, othersDescription) pair
   .test(
     "others-pair",
     "Both Others Quantity and Description must be provided if either one is filled",
@@ -162,11 +160,9 @@ const schema = yup
       return true;
     }
   )
-  // Keep this test for any further interdependent validations
   .test("conditional-validations", null, function (values) {
     return true;
   })
-  // Second test for (othersQuantity, othersDescription) pair targeting specific path
   .test(
     "others-pair-specific",
     "Both Others Quantity and Description must be provided if either one is filled",
@@ -194,12 +190,13 @@ const UpdateOrderStatusPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [signatureImage, setSignatureImage] = useState(null);
-  const [podImage, setPodImage] = useState(null);
+  const [podImage, setPodImage] = useState([]);
   const [isInitiallyPending, setIsInitiallyPending] = useState();
-  const [imageURL, setImageURL] = useState(null); // create a state that will contain our image url
+  const [imageURL, setImageURL] = useState(null);
   const [preview, setPreview] = useState(null);
   const navigate = useNavigate();
-
+  const { userData } = useContext(MainContext);
+  const podImageRef = useRef(null);
   const {
     register,
     handleSubmit,
@@ -217,15 +214,15 @@ const UpdateOrderStatusPage = () => {
     queryKey: [`order-${orderId}`],
     enabled: !!orderId,
   });
+
   const deliveryStatus = watch("deliveryStatus");
-  ///
+
   const reason = watch("reason");
   const handleComplete = () => {
     if (deliveryStatus === "unavailable" && reason) {
       setIsComplete(true);
     }
   };
-  ///
 
   useEffect(() => {
     if (data) {
@@ -242,7 +239,16 @@ const UpdateOrderStatusPage = () => {
     }
   }, [data, reset]);
 
-  const { mutateAsync } = useMutation({
+  useEffect(() => {
+    if (deliveryStatus === "unavailable") {
+      setPreview(null);
+      setPodImage([]);
+      setSignatureImage(null);
+      setImageURL(null);
+    }
+  }, [deliveryStatus, reset]);
+
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: (data) => updateDelivery(data),
     onSuccess: () => {
       setPreview(null);
@@ -264,35 +270,35 @@ const UpdateOrderStatusPage = () => {
     const submitData = new FormData();
 
     if (formData.deliveryStatus === "completed") {
-      if (!signatureImage || !podImage) {
+      if (!signatureImage || podImage.length < 1) {
         return alert("Please upload Proof of delivery and Signature");
       }
       submitData.append("signatureImage", signatureImage, "signature.png");
-      submitData.append("podImage", podImage, "podImage.png");
+
+      podImage.forEach((image, index) => {
+        submitData.append("podImage", image, `podImage${index + 1}.png`);
+      });
     }
 
     if (formData.deliveryStatus === "unavailable") {
       submitData.append("unavailabilityReason", formData.unavailabilityReason);
     }
-
     if (["completed", "unavailable"].includes(formData.deliveryStatus)) {
       submitData.append("orderSerial", data.orderSerial);
-      submitData.append("driverId", formData.driverId);
+      submitData.append("driverId", userData.id);
       submitData.append("deliveryStatus", formData.deliveryStatus);
       submitData.append("email", formData.email);
       submitData.append("deliveryRecipientName", formData.recipientName);
       await mutateAsync({ data: submitData, id: orderId });
     }
-    // console.log(data.deliveryRecipientName);
   };
-  // console.log(imageURL);
 
   const handleEdit = () => setIsEditable(true);
 
   const handleCancel = () => {
     reset(originalData);
     setIsEditable(false);
-    setPodImage(null);
+    setPodImage([]);
     setSignatureImage(null);
     setImageURL(false);
     setPreview(false);
@@ -304,38 +310,64 @@ const UpdateOrderStatusPage = () => {
 
   const handleConfirmModal = (dataUrl) => {
     if (dataUrl) {
-      // console.log("Confirmed signature:", dataUrl);
       setValue("signature", "SampleSignature");
       setShowModal(false);
     } else {
       alert("Please provide a signature before confirming.");
     }
   };
-  if (isLoading) return <div className=" p-6 font-semibold text-lg text-center font-outfit">Loading...</div>;
-  if (isError) return <div className=" p-6 font-semibold text-lg text-center font-outfit">Error: {error.message}</div>;
+  if (isLoading)
+    return (
+      <div className=" p-6 font-semibold text-lg text-center font-outfit">
+        Loading...
+      </div>
+    );
+  if (isError)
+    return (
+      <div className=" p-6 font-semibold text-lg text-center font-outfit">
+        Error: {error.message}
+      </div>
+    );
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // console.log("Uploaded file:", file);
-      setValue("file", file); // Store file in form state
-      setPodImage(file);
+    let files = Array.from(e.target.files);
+    if (files.length > 4 || files.length + podImage?.length > 4) {
+      alert("You can upload a maximum of 4 images.");
+      podImageRef.current.value = "";
 
-      // Convert file to base64 for preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result); // Store base64 preview
-      };
-      reader.readAsDataURL(file);
+      return;
     }
-  };
-  // console.log(data.signatureImage);
+    files = [...podImage, ...files];
+    setValue("file", files);
+    setPodImage(files);
 
+    const readers = files.map((file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((base64Images) => {
+      setPreview(base64Images);
+    });
+  };
+
+  const handleImageCancel = (index) => {
+    const newPodImage = [...podImage];
+    newPodImage.splice(index, 1);
+    setPodImage(newPodImage);
+
+    const newPreview = [...preview];
+    newPreview.splice(index, 1);
+    setPreview(newPreview);
+
+    setValue("file", newPodImage);
+  };
   const handleCaptureSignature = () => {
-    // console.log("Capture Signature clicked");
     setShowModal(true);
   };
-  //
 
   const inputStyle =
     "w-full p-2 border border-gray-200 rounded-lg bg-white focus:ring-purple-500 focus:ring-2 outline-0";
@@ -510,10 +542,11 @@ const UpdateOrderStatusPage = () => {
                 <div className="w-full flex sm:flex-row flex-col gap-2 mt-2">
                   <input
                     type="file"
-                    name="podImage"
-                    onChange={handleImageUpload}
+                    multiple
                     accept="image/*"
-                    // capture="environment" // Opens the back camera if available
+                    onChange={handleImageUpload}
+                    ref={podImageRef}
+                    disabled={preview?.length >= 4}
                     className="w-1/2 py-2 px-4 border border-dashed border-gray-300 rounded"
                   />
 
@@ -556,18 +589,25 @@ const UpdateOrderStatusPage = () => {
                       <label className="block mb-1 text-text1">
                         Proof Of Delivery
                       </label>
-                      <img
-                        src={`${SERVER_URL}${data.podImage}`}
-                        alt="Uploaded"
-                        style={{
-                          display: "block",
-                          border: "1px solid black",
-                          width: "150px",
-                          minHeight: "50px", // Minimum height
-                          maxHeight: "150px", // Maximum height
-                          objectFit: "contain", // Ensure it scales properly without distortion
-                        }}
-                      />
+                      <div className="space-y-4">
+                        {data.podImages.map((podImage, index) => {
+                          return (
+                            <img
+                              key={index}
+                              src={`${SERVER_URL}${podImage}`}
+                              alt="Uploaded"
+                              style={{
+                                display: "block",
+                                border: "1px solid black",
+                                width: "150px",
+                                minHeight: "50px",
+                                maxHeight: "150px",
+                                objectFit: "contain",
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
                   }
                   {
@@ -580,9 +620,9 @@ const UpdateOrderStatusPage = () => {
                           display: "block",
                           border: "1px solid black",
                           width: "150px",
-                          minHeight: "50px", // Minimum height
-                          maxHeight: "150px", // Maximum height
-                          objectFit: "contain", // Ensure it scales properly without distortion
+                          minHeight: "50px",
+                          maxHeight: "150px",
+                          objectFit: "contain",
                         }}
                       />
                     </div>
@@ -590,24 +630,42 @@ const UpdateOrderStatusPage = () => {
                 </div>
               </>
             )}
-            <div className="w-full flex sm:flex-row flex-col mt-4 items-start justify-center gap-4 sm:gap-6">
+            <div className="w-full flex mt-4 items-start justify-start gap-4 sm:gap-6">
               {preview && (
                 <div className="">
                   <label className="block mb-1 text-text1">
                     Proof Of Delivery
                   </label>
-                  <img
-                    src={preview}
-                    alt="Uploaded"
-                    style={{
-                      display: "block",
-                      border: "1px solid black",
-                      width: "150px",
-                      minHeight: "50px", // Minimum height
-                      maxHeight: "150px", // Maximum height
-                      objectFit: "contain", // Ensure it scales properly without distortion
-                    }}
-                  />
+                  <div className="flex flex-col items-center gap-2">
+                    {preview.map((src, index) => (
+                      <div
+                        key={index}
+                        className="relative"
+                        style={{ width: "150px" }}
+                      >
+                        <button
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                          onClick={() => handleImageCancel(index)}
+                          type="button"
+                        >
+                          ✕
+                        </button>
+                        <img
+                          src={src}
+                          alt={`Uploaded ${index + 1}`}
+                          style={{
+                            display: "block",
+                            border: "1px solid black",
+                            width: "150px",
+                            minHeight: "50px",
+                            maxHeight: "150px",
+                            objectFit: "contain",
+                            marginBottom: "8px",
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {imageURL && (
@@ -620,9 +678,9 @@ const UpdateOrderStatusPage = () => {
                       display: "block",
                       border: "1px solid black",
                       width: "150px",
-                      minHeight: "50px", // Minimum height
-                      maxHeight: "150px", // Maximum height
-                      objectFit: "contain", // Ensure it scales properly without distortion
+                      minHeight: "50px",
+                      maxHeight: "150px",
+                      objectFit: "contain",
                     }}
                   />
                 </div>
@@ -642,7 +700,6 @@ const UpdateOrderStatusPage = () => {
                     </button>
                   </div>
 
-                  {/* Signature Pad */}
                   <div className="w-full h-[70%]">
                     <SignaturePad
                       setSignatureImage={setSignatureImage}
@@ -651,7 +708,6 @@ const UpdateOrderStatusPage = () => {
                       setImageURL={setImageURL}
                     />
                   </div>
-                  {/* Buttons */}
                   <div className="flex justify-end gap-2 mt-4">
                     <div className="py-4 px-6  text-white rounded hover:bg-opacity-90"></div>
                   </div>
@@ -684,9 +740,10 @@ const UpdateOrderStatusPage = () => {
                       <button
                         type="submit"
                         onClick={handleComplete}
+                        disabled={isPending}
                         className="w-fit py-2 px-6 bg-third text-white rounded-lg cursor-pointer"
                       >
-                        Complete
+                        {isPending ? "Updating..." : "Complete"}
                       </button>
                     </div>
                   )}

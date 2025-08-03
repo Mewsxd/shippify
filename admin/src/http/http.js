@@ -1,5 +1,5 @@
 export const SERVER_URL = "http://localhost:3000";
-// export const SERVER_URL = "https://delivery-tracker-server.onrender.com";
+// export const SERVER_URL = "https://shippify.onrender.com";
 // export const SERVER_URL = "http://34.121.241.109:3000";
 
 export const getAllDeliveries = async () => {

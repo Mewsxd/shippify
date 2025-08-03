@@ -12,7 +12,7 @@ const OrderTable = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [currentCursor, setCurrentCursor] = useState(null);
-  const [cursorHistory, setCursorHistory] = useState([null]); // Store cursor history for navigation
+  const [cursorHistory, setCursorHistory] = useState([null]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -28,10 +28,8 @@ const OrderTable = () => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Set initial width
     setContainerWidth(containerRef.current.offsetWidth);
 
-    // Create ResizeObserver to watch container size changes
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         setContainerWidth(entry.contentRect.width);
@@ -40,7 +38,6 @@ const OrderTable = () => {
 
     resizeObserver.observe(containerRef.current);
 
-    // Cleanup
     return () => {
       if (containerRef.current) {
         resizeObserver.unobserve(containerRef.current);
@@ -48,17 +45,14 @@ const OrderTable = () => {
     };
   }, []);
 
-  // Determine if we should use table or card view based on container width
   const useTableView = containerWidth >= 768;
 
-  // Pagination and data fetching
   const PAGE_SIZE = 10;
 
   const { data, isLoading, isError } = useQuery({
     queryFn: () => getUnAssignedDeliveries(currentCursor, search, filter),
     queryKey: ["deliveries", currentCursor, search, search],
     onSuccess: (data) => {
-      // Update total count when we get new data
       if (data?.totalCount) {
         setTotalCount(data.totalCount);
       }
@@ -75,7 +69,6 @@ const OrderTable = () => {
     },
   });
 
-  // Calculate total pages
   const totalPages = totalCount ? Math.ceil(totalCount / PAGE_SIZE) : 0;
 
   let deliveriesData = data?.deliveries || [];
@@ -84,7 +77,6 @@ const OrderTable = () => {
 
   const handleSearch = () => {
     setSearch(searchInput);
-    // Reset pagination when searching
     setCurrentCursor(null);
     setCurrentPage(1);
     setCursorHistory([null]);
@@ -93,16 +85,13 @@ const OrderTable = () => {
 
   const handleFilter = (e) => {
     setFilter(e.target.value);
-    // Reset pagination when filtering
     setCurrentCursor(null);
     setCurrentPage(1);
     setCursorHistory([null]);
   };
 
-  // Pagination handlers
   const handleNextPage = () => {
     if (hasNextPage) {
-      // Add the next cursor to our history
       const newHistory = [...cursorHistory];
       if (nextCursor && !newHistory.includes(nextCursor)) {
         newHistory.push(nextCursor);
@@ -115,19 +104,18 @@ const OrderTable = () => {
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      // Go back to the previous cursor in our history
       const newPage = currentPage - 1;
-      const prevCursor = cursorHistory[newPage - 1]; // Arrays are 0-indexed
+      const prevCursor = cursorHistory[newPage - 1];
       setCurrentCursor(prevCursor);
       setCurrentPage(newPage);
     }
   };
 
   function formatTimestamp(timestamp) {
-    const date = new Date(timestamp * 1000); // Convert to milliseconds
+    const date = new Date(timestamp * 1000);
 
     const day = String(date.getUTCDate()).padStart(2, "0");
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0"); // Months are 0-based
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
     const year = date.getUTCFullYear();
 
     return `${month}-${day}-${year}`;
@@ -140,13 +128,6 @@ const OrderTable = () => {
     data.append("driverId", userData.id);
     mutate({ id, data });
   };
-  // if (isError) {
-  //   return (
-  //     <p className="flex justify-center my-4">
-  //       There was an error fetching orders, please try again!
-  //     </p>
-  //   );
-  // }
 
   return (
     <>
@@ -174,27 +155,12 @@ const OrderTable = () => {
               Search
             </button>
           </div>
-          {/* Filter Dropdown */}
-          {/* <div className="min-w-[150px] w-fit">
-            <select
-              className="w-full border px-4 py-2 rounded-md text-gray-700 focus:outline-none focus:ring-blue-200 focus:border-blue-400 outline-0 border-gray-200"
-              value={filter}
-              onChange={handleFilter}
-              aria-label="Filter orders"
-            >
-              <option value="">All</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-              <option value="unavailable">Unavailable</option>
-            </select>
-          </div> */}
         </div>
         <div
           ref={containerRef}
           className="w-full mt-2 overflow-y-scroll custom-scrollbar overflow-hidden border-t border-b border-gray-200"
         >
           {useTableView ? (
-            // Table view for wider containers
             <div className="w-full flex-grow">
               <table className="w-full min-w-full table-fixed">
                 <thead className="sticky top-0 bg-gray-100 shadow z-10">
@@ -216,7 +182,8 @@ const OrderTable = () => {
                   ) : isError ? (
                     <tr>
                       <td className="font-semibold pl-4 py-4" colSpan="6">
-                        There was an error fetching deliveries, please try again!
+                        There was an error fetching deliveries, please try
+                        again!
                       </td>
                     </tr>
                   ) : deliveriesData?.length === 0 ? (
@@ -241,7 +208,7 @@ const OrderTable = () => {
                         <td className="p-3 w-1/5 truncate">{order?.email}</td>
                         <td className="p-3 w-1/5 truncate">{order?.name}</td>
                         <td className="p-3 w-1/5 text-center">
-                          {acceptedOrders[order.id] ? (
+                          {/* {acceptedOrders[order.id] ? (
                             <span className="text-green-600">Accepted</span>
                           ) : (
                             <button
@@ -253,7 +220,10 @@ const OrderTable = () => {
                             >
                               Deliver
                             </button>
-                          )}
+                          )} */}{" "}
+                          <span className="text-white px-4 py-2 rounded-lg cursor-pointer bg-text1">
+                            Deliver
+                          </span>
                         </td>
                       </tr>
                     ))
@@ -262,7 +232,6 @@ const OrderTable = () => {
               </table>
             </div>
           ) : (
-            // Card view for narrower containers
             <div className="w-full flex-grow">
               {isLoading ? (
                 <div className="p-4 font-semibold">
@@ -313,15 +282,18 @@ const OrderTable = () => {
                         {acceptedOrders[order.id] ? (
                           <span className="text-green-600">Accepted</span>
                         ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAccept(order.id);
-                            }}
-                            className="bg-text1 text-white px-4 py-1 rounded-lg"
-                          >
+                          // <button
+                          //   onClick={(e) => {
+                          //     e.stopPropagation();
+                          //     handleAccept(order.id);
+                          //   }}
+                          //   className="bg-text1 text-white px-4 py-1 rounded-lg"
+                          // >
+                          //   Deliver
+                          // </button>
+                          <span className="text-white px-4 py-2 rounded-lg cursor-pointer bg-text1">
                             Deliver
-                          </button>
+                          </span>
                         )}
                       </div>
                     </div>
@@ -332,7 +304,6 @@ const OrderTable = () => {
           )}
         </div>
 
-        {/* Pagination Controls */}
         <div className="flex items-center justify-between p-4 border-t border-gray-200">
           <div className="text-sm text-gray-600">
             Page {currentPage} {totalPages > 0 ? `of ${totalPages}` : ""}

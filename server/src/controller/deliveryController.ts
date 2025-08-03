@@ -81,11 +81,7 @@ export const createDelivery = catchAsync(
     };
 
     const deliveryRef = await db.collection("deliveries").add(newDelivery);
-    const recipients = [
-      email,
-      // "info@pharmahealth.net",
-      // "avihendeles@gmail.com",
-    ];
+    const recipients = [email];
 
     const emailBody = `
   <div class="container">
@@ -132,16 +128,16 @@ export const createDelivery = catchAsync(
 
     <div class="footer">
       <p>If you have any questions, feel free to contact us at 
-         <a href="mailto:info@pharmahealth.net">info@pharmahealth.net</a>.
+         <a href="mailto:info@shippify.net">info@shippify.net</a>.
       </p>
-      <p>&copy; 2025 PharmaHealth. All rights reserved.</p>
+      <p>&copy; 2025 Shippify. All rights reserved.</p>
     </div>
   </div>
 `;
 
     sendEmail(
       recipients.join(","),
-      "From PharmaHealth: Delivery Confirmed",
+      "From Shippify: Delivery Confirmed",
       emailBody
     ).catch((error) => console.error("Failed to send email:", error));
     res.status(201).json({
@@ -419,15 +415,11 @@ export const updateDelivery = catchAsync(
         throw new Error(`Failed to update for delivery`);
       }
 
-      const recipients = [
-        req.body["email"],
-        // "info@pharmahealth.net",
-        // "avihendeles@gmail.com",
-      ];
+      const recipients = [req.body["email"]];
 
       sendEmail(
         recipients.join(","),
-        "From PharmaHealth: Delivery failed",
+        "From Shippify: Delivery failed",
         `<div class="container">
           <h2>Delivery Status Update</h2>
           <p>
@@ -443,9 +435,9 @@ export const updateDelivery = catchAsync(
           <div class="footer">
             <p>
               If you have any questions or need further assistance, please contact us at
-              <a href="mailto:info@pharmahealth.net">info@pharmahealth.net</a>.
+              <a href="mailto:info@shippify.net">info@shippify.net</a>.
             </p>
-            <p>&copy; 2025 PharmaHealth. All rights reserved.</p>
+            <p>&copy; 2025 Shippify. All rights reserved.</p>
           </div>
         </div>`
       ).catch((error) => console.error("Failed to send email:", error));
@@ -520,22 +512,18 @@ export const updateDelivery = catchAsync(
 
     <div class="footer">
       <p>If you have any questions, feel free to contact us at 
-        <a href="mailto:info@pharmahealth.net">info@pharmahealth.net</a>.
+        <a href="mailto:info@shippify.net">info@shippify.net</a>.
       </p>
-      <p>&copy; 2025 PharmaHealth. All rights reserved.</p>
+      <p>&copy; 2025 Shippify. All rights reserved.</p>
     </div>
   </div>
 `;
 
-      const recipients = [
-        req.body["email"],
-        // "info@pharmahealth.net",
-        // "avihendeles@gmail.com",
-      ];
+      const recipients = [req.body["email"]];
       if (attachments.length > 0) {
         sendEmail(
           recipients.join(","),
-          "From PharmaHealth: Delivery completed",
+          "From Shippify: Delivery completed",
           emailBody,
           attachments
         ).catch((error) => console.error("Failed to send email:", error));

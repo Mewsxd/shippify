@@ -4,9 +4,9 @@ import Layout from "./Layout";
 import OrdersPage from "./pages/OrdersPage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuthPage from "./AuthPage";
-import Order from "./pages/Order";
+// import Order from "./pages/Order";
 import ProtectedRoute from "./util/ProtectedRoute";
-import NotFoundPage from "./pages/NotFoundPage"; // Import NotFoundPage
+import NotFoundPage from "./pages/NotFoundPage";
 import MyDeliveries from "./pages/MyDeliveries";
 import UpdateOrderStatusPage from "./pages/UpdateOrderStatusPage";
 import { MainContextProvider } from "./store/MainContext";
@@ -16,6 +16,8 @@ function App() {
 
   const router = createBrowserRouter([
     {
+      // Root path wrapped in ProtectedRoute to guard all child routes
+
       path: "/",
       element: (
         <ProtectedRoute>
@@ -24,27 +26,38 @@ function App() {
       ),
       children: [
         {
+          // Default route (Orders listing)
           index: true,
           element: <OrdersPage />,
         },
         {
+          // Order details by orderId
           path: "/order/:orderId",
-          element: <Order />,
+          // element: <Order />,
+          element: <UpdateOrderStatusPage />,
         },
         {
+          // My Deliveries page
           path: "/my-deliveries",
           element: <MyDeliveries />,
-          // children: [{ path: ":orderId", element: <Order /> }],
         },
-        { path: "/my-deliveries/:orderId", element: <UpdateOrderStatusPage /> },
-        // {
-        //   path: "add-delivery",
-        //   element: <AddDelivery />,
-        // },
+        {
+          // Update delivery status page
+          path: "/my-deliveries/:orderId",
+          element: <UpdateOrderStatusPage />,
+        },
       ],
     },
-    { path: "/auth", element: <AuthPage /> },
-    { path: "*", element: <NotFoundPage /> }, // Catch-all route
+    {
+      // Public auth route (login/signup)
+      path: "/auth",
+      element: <AuthPage />,
+    },
+    {
+      // Fallback route for unknown paths
+      path: "*",
+      element: <NotFoundPage />,
+    },
   ]);
   return (
     <MainContextProvider>

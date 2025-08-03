@@ -29,7 +29,7 @@ export const sendEmail = async (
     }));
 
     const info = await transporter.sendMail({
-      from: `"PharmaHealth" <${process.env.SMTP_USER}>`,
+      from: `"Shippify" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html: `

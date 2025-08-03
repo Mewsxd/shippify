@@ -38,8 +38,6 @@ const Order = () => {
   const [originalData, setOriginalData] = useState(null);
 
   const {
-    // register,
-    // handleSubmit,
     setValue,
     watch,
     reset,
@@ -54,11 +52,10 @@ const Order = () => {
     enabled: !!orderId,
   });
 
-  // Prefill form data once data is available
   useEffect(() => {
     if (data) {
-      reset(data); // Prefill form fields
-      setOriginalData(data); // Store original data for cancel functionality
+      reset(data);
+      setOriginalData(data);
     }
   }, [data, reset]);
 
@@ -67,7 +64,7 @@ const Order = () => {
     mutationKey: ["create-delivery"],
     onSuccess: () => {
       alert("Delivery updated successfully!");
-      setIsEditable(false); // Disable editing after successful submission
+      setIsEditable(false);
     },
     onError: () => {
       alert("Error occurred while updating your delivery, please try again!");
@@ -76,7 +73,6 @@ const Order = () => {
 
   const deliveryType = watch("deliveryType");
 
-  // Clear deliveryTypeDescription when type is not "Others"
   useEffect(() => {
     if (deliveryType !== "Others") {
       setValue("deliveryTypeDescription", "");

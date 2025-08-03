@@ -5,8 +5,7 @@ import amg2 from "./assets/amg7.svg";
 import { FaSpinner } from "react-icons/fa";
 import { login } from "./http/http";
 import MainContext from "./store/MainContext";
-import logo from "./assets/shippify-logo.png";
-
+import logo from "./assets/logo.png";
 const AuthPage = () => {
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
@@ -21,20 +20,17 @@ const AuthPage = () => {
         email: emailRef.current?.value || "",
         password: passwordRef.current?.value || "",
       }),
+    // On successful login: set user data and navigate to home
     onSuccess: (data) => {
-      // console.log(data);
       setUserData(data);
-      // console.log("Login successful, data:", data);
-
-      // Add 1-second delay before setting loading to false and navigating
       const timeout = setTimeout(() => {
         setLoading(false);
         navigate("/");
       }, 200);
 
-      // Cleanup in case of component unmount
       return () => clearTimeout(timeout);
     },
+    // On login failure: show error and stop loading
     onError: (error) => {
       console.error("Login failed:", error);
       alert(error.message);
