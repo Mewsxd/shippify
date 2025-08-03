@@ -12,9 +12,6 @@ const PORT = process.env.PORT || 3001;
 const app = express();
 
 const isProd = process.env.NODE_ENV === "production";
-// const staticPath = isProd
-//   ? "/mnt/data/public"
-//   : path.join(__dirname, "../public");
 
 const staticPath = path.join(__dirname, "../public");
 app.use("/public", express.static(staticPath));
@@ -57,11 +54,6 @@ app.options(
 
 app.use(express.json());
 app.use(cookieParser()); // ✅ Required to read cookies
-
-app.get("/api/ping", (req: Request, res: Response) => {
-  res.status(200).json({ message: "pong" });
-});
-
 app.use("/api/users", userRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/deliveries", deliveryRoutes);
