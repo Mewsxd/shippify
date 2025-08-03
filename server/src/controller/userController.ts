@@ -140,10 +140,33 @@ export const resetUserPassword = catchAsync(
       updatedAt: new Date(),
     });
     if (userData) {
+      const emailBody = `<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <div style="max-width: 600px; margin: auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+      <h2 style="color: #333;">Password Reset Successful</h2>
+      <p>Hello,</p>
+      <p>Your password has been successfully reset. Please find your new login credentials below:</p>
+      
+      <p style="font-size: 16px;">
+        <strong>New Password:</strong> <span style="color: #000;">{{PASSWORD}}</span>
+      </p>
+      
+      <a href="${process.env.DRIVER_URL}" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+        Go to Login
+      </a>
+
+      <p style="margin-top: 30px;">If you did not request this change or have any concerns, please contact our support team immediately.</p>
+
+      <p style="color: #888; font-size: 12px;">This is an automated message. Please do not reply to this email.</p>
+    </div>
+  </body>
+</html>`;
+
       await sendEmail(
         userData.email,
-        "Password Reset Successfully",
-        "Your password has been reset successfully."
+        "Your Password Has Been Reset Successfully",
+        emailBody.replace("{{PASSWORD}}", password) // Don't include password in plain text if not absolutely necessary
       );
     }
 
