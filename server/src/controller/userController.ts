@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import catchAsync from "../utils/catchAsync";
 import { db } from "../config/firebase";
-import { getDeliveriesByUser } from "./deliveryController";
-import pLimit from "p-limit";
+import argon2 from "argon2";
+import { sendEmail } from "../config/sendEmail";
 
 export const createUser = catchAsync(async (req: Request, res: Response) => {
   const { name, email, phone, role, password } = req.body;
@@ -19,14 +19,14 @@ export const createUser = catchAsync(async (req: Request, res: Response) => {
       message: "User with this email already exists",
     });
   }
-
+  const passwordHash = await argon2.hash(password);
   // Create user document without ID first
   const newUser = {
     name,
     email,
     phone,
     role,
-    password,
+    password: passwordHash,
     isActive: true,
     createdAt: new Date(),
   };
@@ -67,7 +67,7 @@ export const getUserById = catchAsync(async (req: Request, res: Response) => {
 export const getUsers = catchAsync(async (req: Request, res: Response) => {
   const snapshot = await db
     .collection("users")
-    .where("isActive", "==", true)
+    .where("isActive", "==", true) // Only retrieve active users
     .get();
   const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
@@ -76,7 +76,7 @@ export const getUsers = catchAsync(async (req: Request, res: Response) => {
 
 export const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, email, phone, role, password } = req.body;
+  const { name, email, phone, role } = req.body;
 
   const userRef = db.collection("users").doc(id);
   const userSnapshot = await userRef.get();
@@ -90,7 +90,6 @@ export const updateUser = catchAsync(async (req: Request, res: Response) => {
     email,
     phone,
     role,
-    password,
     updatedAt: new Date(),
   });
 
@@ -107,33 +106,49 @@ export const deleteUser = catchAsync(async (req: Request, res: Response) => {
     return res.status(404).json({ success: false, message: "User not found" });
   }
 
-  const deliveries = await getDeliveriesByUser(id);
-  const pendingDeliveries = deliveries.filter((delivery) => {
-    // console.log(delivery);
-
-    //@ts-ignore
-    return delivery.deliveryStatus === "pending";
-  });
-  // console.log(pendingDeliveries);
-  // for (const delivery of pendingDeliveries) {
-  //   await db.collection("deliveries").doc(delivery.id).update({
-  //     isActive: false,
-  //   });
-  // }
-  console.log(pendingDeliveries);
-
-  await Promise.all(
-    pendingDeliveries.map((delivery) => {
-      db.collection("deliveries").doc(delivery.id).update({
-        isAssigned: false,
-        driverId: null,
-      });
-    })
-  );
   await userRef.update({
     isActive: false,
-    updatedAt: new Date(),
+    updatedAt: new Date(), // Record deletion timestamp
   });
 
   res.status(200).json({ success: true, message: "User deleted successfully" });
 });
+
+export const resetUserPassword = catchAsync(
+  async (req: Request, res: Response) => {
+    const password = req.body.password;
+    const { id } = req.params;
+
+    if (!password) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Password is required" });
+    }
+
+    const passwordHash = await argon2.hash(password);
+    const userRef = db.collection("users").doc(id);
+    const userSnapshot = await userRef.get();
+
+    if (!userSnapshot.exists) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    const userData = userSnapshot.data();
+    await userRef.update({
+      password: passwordHash,
+      updatedAt: new Date(),
+    });
+    if (userData) {
+      await sendEmail(
+        userData.email,
+        "Password Reset Successfully",
+        "Your password has been reset successfully."
+      );
+    }
+
+    res
+      .status(200)
+      .json({ success: true, message: "Password reset successfully" });
+  }
+);

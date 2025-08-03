@@ -1,20 +1,19 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const SECRET_KEY =
-  "6fc60a8703a30a7f8a70ab7a8b18662b936001f60cd3a6cb1bffd304cdbec2a8"; // Replace with a secure key
+const SECRET_KEY = process.env.JWT_SECRET as string;
 
 export interface AuthRequest extends Request {
   user?: any;
 }
 
-export const authenticateJWT = (
+// to authenticate the driver
+export const authenticateDriverJWT = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void => {
   const token = req.cookies?.["deliverx-jwt"];
-
   if (!token) {
     res.status(401).json({ message: "Unauthorized: No token provided" });
     return;
@@ -30,13 +29,14 @@ export const authenticateJWT = (
   }
 };
 
+// to authenticate the admin
 export const authenticateAdminJWT = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void => {
   const token = req.cookies?.["deliverx-jwt"];
-
+  console.log("Admin");
   if (!token) {
     res.status(401).json({ message: "Unauthorized: No token provided" });
     return;

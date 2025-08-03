@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -8,91 +8,6 @@ import { LuPlus } from "react-icons/lu";
 import { Link } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 
-// const schema = yup.object().shape({
-//   name: yup.string().required("Company name is required"),
-//   contactPersonName: yup.string().required("Contact person is required"),
-//   address: yup.string().required("Company address is required"),
-//   contactPersonPhone: yup.string().required("Phone number is required"),
-//   email: yup
-//     .string()
-//     .email("Invalid email format")
-//     .required("Email is required"),
-//   deliveryType: yup.string().required("Delivery type is required"),
-
-//   // Removed deliveryTypeDescription as it's not used in the UI
-
-//   boxQuantity: yup
-//     .number()
-//     .transform((value) =>
-//       isNaN(value) || value === null || value === "" ? undefined : value
-//     )
-//     .when("deliveryType", {
-//       is: "Box",
-//       then: (schema) =>
-//         schema
-//           .required("Please fill out the field")
-//           .typeError("Please enter a valid number")
-//           .positive("Value must be positive"),
-//       otherwise: (schema) => schema.notRequired(),
-//     }),
-
-//   BagQuantity: yup
-//     .number()
-//     .transform((value) =>
-//       isNaN(value) || value === null || value === "" ? undefined : value
-//     )
-//     .when("deliveryType", {
-//       is: "Bag",
-//       then: (schema) =>
-//         schema
-//           .required("Please fill out the field")
-//           .typeError("Please enter a valid number")
-//           .positive("Value must be positive"),
-//       otherwise: (schema) => schema.notRequired(),
-//     }),
-
-//   toteQuantity: yup
-//     .number()
-//     .transform((value) =>
-//       isNaN(value) || value === null || value === "" ? undefined : value
-//     )
-//     .when("deliveryType", {
-//       is: "Tote",
-//       then: (schema) =>
-//         schema
-//           .required("Please fill out the field")
-//           .typeError("Please enter a valid number")
-//           .positive("Value must be positive"),
-//       otherwise: (schema) => schema.notRequired(),
-//     }),
-
-//   othersQuantity: yup
-//     .number()
-//     .transform((value) =>
-//       isNaN(value) || value === null || value === "" ? undefined : value
-//     )
-//     .when("deliveryType", {
-//       is: "Others",
-//       then: (schema) =>
-//         schema
-//           .required("Please fill out the field")
-//           .typeError("Please enter a valid number")
-//           .positive("Value must be positive"),
-//       otherwise: (schema) => schema.notRequired(),
-//     }),
-
-//   othersDescription: yup.string().when("deliveryType", {
-//     is: "Others",
-//     then: (schema) => schema.required("Please fill out the field"),
-//     otherwise: (schema) => schema.notRequired(),
-//   }),
-// });
-
-// // You need to add this for complex interdependent validations to work correctly
-// schema.test("conditional-validations", null, function (values) {
-//   // Return true if valid, or create a validation error
-//   return true;
-// });
 const schema = yup
   .object()
   .shape({
@@ -259,6 +174,7 @@ const schema = yup
       return true;
     }
   );
+
 const AddDelivery = () => {
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState("");

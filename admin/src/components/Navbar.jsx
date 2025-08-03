@@ -1,13 +1,13 @@
 import { useMutation } from "@tanstack/react-query";
-import { LogOut, User, User2 } from "lucide-react";
-import React from "react";
+import { LogOut, Settings, User } from "lucide-react";
 import {
   BsLayoutSidebarInset,
   BsLayoutSidebarInsetReverse,
 } from "react-icons/bs";
 import { logout } from "../http/http";
-import { useNavigate, useNavigation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/shippify-logo.png";
+
 const Navbar = ({
   isSidebarOpen,
   setSidebarOpen,
@@ -51,16 +51,21 @@ const Navbar = ({
           </button>
           {isProfileMenuOpen && (
             <div className="absolute cursor-pointer z-50 right-0 mt-2 p-2 w-48 border border-gray-200 rounded-lg shadow-lg text-whitetext bg-secondary">
-              <div className=" relative">
-                {/* <button className="w-full text-left px-4 py-2 flex items-center text- rounded-lg hover:bg-gray-300">
-                  <User2 size={16} className="mr-2 " /> Profile
-                </button> */}
-              </div>
+              <div className=" relative"></div>
               <button
                 onClick={logoutHandler}
                 className="w-full text-left px-4 py-2 cursor-pointer flex items-center text-whitetext rounded-lg"
               >
                 <LogOut size={16} className="mr-2" /> Logout
+              </button>
+              <button
+                onClick={() => {
+                  navigate("/settings");
+                  setProfileMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 cursor-pointer flex items-center text-whitetext rounded-lg"
+              >
+                <Settings size={16} className="mr-2" /> Settings
               </button>
             </div>
           )}

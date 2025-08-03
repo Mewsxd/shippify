@@ -3,9 +3,15 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { deleteDriver, getDriverById, updateDriver } from "../http/http";
+import {
+  deleteDriver,
+  getDriverById,
+  resetDriverPassword,
+  updateDriver,
+} from "../http/http";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import PasswordInput from "../components/PasswordInput";
 
 const schema = yup.object().shape({
   name: yup.string().required("Company name is required"),
@@ -14,10 +20,6 @@ const schema = yup.object().shape({
     .string()
     .email("Invalid email format")
     .required("Email is required"),
-  password: yup
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .required("Password is required"),
   notes: yup.string(),
 });
 const Driver = () => {
@@ -25,7 +27,11 @@ const Driver = () => {
   const [isEditable, setIsEditable] = useState(false);
   const [originalData, setOriginalData] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [show, setShow] = useState({ new: false, confirm: false });
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -80,6 +86,16 @@ const Driver = () => {
       },
     });
 
+  const { mutateAsync: resetPasswordMutate, isPending: resettingPassword } =
+    useMutation({
+      mutationFn: resetDriverPassword,
+      onSuccess: () => {
+        alert("Password reset successfully!");
+        setShowResetModal(false);
+        setNewPassword("");
+        setConfirmPassword("");
+      },
+    });
   const onSubmit = async (formData) => {
     // console.log("Driver Data:", formData);
     // delete formData.id;
@@ -100,6 +116,7 @@ const Driver = () => {
     return (
       <div className=" flex justify-center mt-4 font-outfit">Loading...</div>
     );
+
   if (isError)
     return (
       <div className=" flex justify-center mt-4 font-outfit">
@@ -113,6 +130,31 @@ const Driver = () => {
 
   const confirmDelete = () => {
     deleteDriverMutate(driverId);
+  };
+
+  // Handlers
+  const handlePasswordChange = (e) => {
+    setNewPassword(e.target.value);
+    setError("");
+  };
+
+  const handleConfirmChange = (e) => {
+    setConfirmPassword(e.target.value);
+    setError("");
+  };
+
+  const handleResetSubmit = async () => {
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+    await resetPasswordMutate({ id: driverId, newPassword });
+    // Proceed with password reset logic
+    console.log("Password reset successful:", newPassword);
   };
 
   return (
@@ -155,30 +197,6 @@ const Driver = () => {
                 />
                 <p className="text-red-500">{errors.email?.message}</p>
               </div>
-            </div>
-            <div className="relative">
-              <label className="block mb-1 text-text1">Password</label>
-              <input
-                autoComplete="new-password"
-                type={showPassword ? "text" : "password"}
-                {...register("password")}
-                className={inputStyle}
-                disabled={!isEditable}
-                placeholder="******"
-              />
-              {/* Eye Icon */}
-              <div
-                onClick={() => isEditable && setShowPassword((prev) => !prev)}
-                className={`absolute right-3 top-12  -translate-y-1/2 cursor-pointer ${
-                  isEditable
-                    ? "text-gray-500"
-                    : "text-gray-300 cursor-not-allowed"
-                }`}
-              >
-                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
-              </div>
-              {/* Error Message */}
-              <p className="text-red-500 text-sm">{errors.password?.message}</p>
             </div>
 
             <div className="w-full flex justify-between items-center mt-8">
@@ -223,6 +241,12 @@ const Driver = () => {
                 </div>
               )}
             </div>
+            <p
+              onClick={() => setShowResetModal(true)}
+              className=" underline text-purple-900 cursor-pointer"
+            >
+              Reset password
+            </p>
           </form>
         </div>
       </div>
@@ -248,6 +272,69 @@ const Driver = () => {
                 {deleteDriverPending ? "Deleting..." : "Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="relative reset-modal max-w-2xl w-2xl bg-white rounded-3xl z-50 p-6 flex flex-col justify-center items-center gap-4">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowResetModal(false)}
+              disabled={resettingPassword}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold"
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+
+            <h2 className="text-2xl font-bold">Reset Password</h2>
+
+            {/* <input
+              type="password"
+              placeholder="New Password"
+              value={newPassword}
+              onChange={handlePasswordChange}
+              className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={handleConfirmChange}
+              className="w-full max-w-md px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            /> */}
+
+            <PasswordInput
+              value={newPassword}
+              onChange={handlePasswordChange}
+              placeholder="New Password"
+              autoComplete="new-password"
+              visible={show.new}
+              onToggle={() => setShow((prev) => ({ ...prev, new: !prev.new }))}
+            />
+            <PasswordInput
+              value={confirmPassword}
+              onChange={handleConfirmChange}
+              placeholder="Confirm Password"
+              autoComplete="new-password"
+              visible={show.confirm}
+              onToggle={() =>
+                setShow((prev) => ({ ...prev, confirm: !prev.confirm }))
+              }
+            />
+
+            <button
+              onClick={handleResetSubmit}
+              disabled={resettingPassword}
+              className="mt-2 px-6 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800"
+            >
+              {resettingPassword ? "Resetting..." : "Submit"}
+            </button>
+
+            {error && (
+              <div className="mt-2 text-red-600 font-medium">{error}</div>
+            )}
           </div>
         </div>
       )}

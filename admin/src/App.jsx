@@ -1,6 +1,5 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./App.css";
-import HomePage from "./pages/Home/HomePage";
 import Layout from "./Layout";
 import OrdersPage from "./pages/OrdersPage";
 import AddCompany from "./pages/AddCompany";
@@ -15,6 +14,7 @@ import AllCompanies from "./pages/AllCompanies";
 import AllDrivers from "./pages/AllDrivers";
 import Company from "./pages/Company";
 import Driver from "./pages/Driver";
+import Settings from "./pages/Settings";
 
 function App() {
   const queryClient = new QueryClient();
@@ -36,7 +36,7 @@ function App() {
         { path: "add-driver", element: <AddDriver /> },
         { path: "drivers", element: <AllDrivers /> },
         { path: "drivers/:driverId", element: <Driver /> },
-
+        { path: "settings", element: <Settings /> },
         { path: "add-delivery", element: <AddDelivery /> },
       ],
     },

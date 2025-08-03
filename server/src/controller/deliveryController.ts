@@ -7,11 +7,13 @@ import { sendEmail } from "../config/sendEmail";
 import generateOrderSerial from "../config/generateOrderSerial";
 import { paginateCollection } from "../utils/firestorePagination";
 import { DocumentData, Query } from "firebase-admin/firestore";
+import {
+  getAbsoluteFilePath,
+  getDeliveryFolder,
+  getPublicPath,
+} from "../config/storagePath";
 
-const normalizeNumber = (value: any): number => {
-  return value ? Number(value) || 0 : 0;
-};
-
+// Create a new delivery and send email confirmation
 export const createDelivery = catchAsync(
   async (req: Request, res: Response) => {
     let {
@@ -28,6 +30,7 @@ export const createDelivery = catchAsync(
       contactPersonPhone,
       email,
     } = req.body;
+
     // Ensure numeric values for quantities
     bagQuantity = Number(bagQuantity) || 0;
     boxQuantity = Number(boxQuantity) || 0;
@@ -78,12 +81,16 @@ export const createDelivery = catchAsync(
     };
 
     const deliveryRef = await db.collection("deliveries").add(newDelivery);
-    const recipients = [email];
+    const recipients = [
+      email,
+      // "info@pharmahealth.net",
+      // "avihendeles@gmail.com",
+    ];
 
     const emailBody = `
   <div class="container">
     <h2>Delivery Confirmation</h2>
-    <p>Dear <strong>${contactPersonName}</strong>,</p>
+    <p>Hello <strong>${contactPersonName}</strong>,</p>
     <p>Your delivery has been successfully created. Below are the details of your delivery:</p>
     <div class="details">
       <p><strong>Order Number:</strong> ${orderSerial}</p>
@@ -125,16 +132,16 @@ export const createDelivery = catchAsync(
 
     <div class="footer">
       <p>If you have any questions, feel free to contact us at 
-        <a href="mailto:info@shippify.net">info@shippify.net</a>.
+         <a href="mailto:info@pharmahealth.net">info@pharmahealth.net</a>.
       </p>
-      <p>&copy; 2025 Shippify. All rights reserved.</p>
+      <p>&copy; 2025 PharmaHealth. All rights reserved.</p>
     </div>
   </div>
 `;
 
     sendEmail(
       recipients.join(","),
-      "From Shippify: Delivery Confirmed",
+      "From PharmaHealth: Delivery Confirmed",
       emailBody
     ).catch((error) => console.error("Failed to send email:", error));
     res.status(201).json({
@@ -173,86 +180,7 @@ export const getDeliveryById = catchAsync(
   }
 );
 
-// export const getDeliveries = catchAsync(async (req: Request, res: Response) => {
-//   const snapshot = await db
-//     .collection("deliveries")
-//     .orderBy("createdAt", "desc") // Sort by createdAt in descending order (latest first)
-//     .get();
-
-//   const deliveries = snapshot.docs.map((doc) => ({
-//     id: doc.id,
-//     ...doc.data(),
-//   }));
-
-//   res.status(200).json({ success: true, deliveries });
-// });
-
-// export const getDeliveries = catchAsync(async (req: Request, res: Response) => {
-//   const { cursor = null, orderSerial } = req.query;
-//   const pageSize = 10;
-
-//   // If searching by orderSerial, bypass pagination
-//   if (orderSerial) {
-//     const snapshot = await db
-//       .collection("deliveries")
-//       .where("orderSerial", "==", orderSerial)
-//       .get();
-
-//     const deliveries = snapshot.docs.map((doc) => ({
-//       id: doc.id,
-//       ...doc.data(),
-//     }));
-
-//     return res.status(200).json({
-//       success: true,
-//       deliveries,
-//       nextCursor: null,
-//       hasNextPage: false,
-//     });
-//   }
-
-//   // Default paginated query
-//   let deliveriesRef = db
-//     .collection("deliveries")
-//     .orderBy("createdAt", "desc")
-//     .limit(pageSize + 1); // Fetch one extra to check if more exist
-
-//   if (cursor) {
-//     const cursorDoc = await db
-//       .collection("deliveries")
-//       .doc(cursor as string)
-//       .get();
-//     if (!cursorDoc.exists) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Invalid cursor ID" });
-//     }
-
-//     deliveriesRef = deliveriesRef.startAfter(cursorDoc);
-//   }
-
-//   const snapshot = await deliveriesRef.get();
-//   const docs = snapshot.docs;
-//   const hasNextPage = docs.length > pageSize;
-//   const trimmedDocs = hasNextPage ? docs.slice(0, pageSize) : docs;
-
-//   const deliveries = trimmedDocs.map((doc) => ({
-//     id: doc.id,
-//     ...doc.data(),
-//   }));
-
-//   const nextCursor = hasNextPage
-//     ? trimmedDocs[trimmedDocs.length - 1].id
-//     : null;
-
-//   res.status(200).json({
-//     success: true,
-//     deliveries,
-//     nextCursor,
-//     hasNextPage,
-//   });
-// });
-
+// Paginated fetch of deliveries with optional filters
 export const getDeliveries = catchAsync(async (req: Request, res: Response) => {
   const { cursor = null, orderSerial, deliveryStatus } = req.query;
   const pageSize = 10;
@@ -265,15 +193,18 @@ export const getDeliveries = catchAsync(async (req: Request, res: Response) => {
   if (deliveryStatus) {
     whereList.push(["deliveryStatus", "==", deliveryStatus]);
   }
+
+  // Perform paginated query using utility function
   const result = await paginateCollection(db, {
     collection: "deliveries",
     pageSize,
     orderBy: ["createdAt", "desc"],
     cursor: cursor as string,
-    // where: orderSerial ? [["orderSerial", "==", orderSerial]] : [],
     where: whereList,
     fetchingUnassignedDeliveries: false,
   });
+
+  // Prepare count query using same filters
   let countSnap: Query<DocumentData> = db.collection("deliveries");
 
   if (deliveryStatus) {
@@ -282,8 +213,10 @@ export const getDeliveries = catchAsync(async (req: Request, res: Response) => {
   if (orderSerial) {
     countSnap = countSnap.where("orderSerial", "==", orderSerial);
   }
-  const countSnapRes = await countSnap.count().get();
+  const countSnapRes = await countSnap.count().get(); // Get total matching documents
   const totalCount = countSnapRes.data().count;
+
+  // Respond with paginated results and count
   res.status(200).json({
     success: true,
     deliveries: result.items,
@@ -293,25 +226,6 @@ export const getDeliveries = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-// export const getUnAssignedDeliveries = catchAsync(
-//   async (req: Request, res: Response) => {
-//     const snapshot = await db
-//       .collection("deliveries")
-//       .where("isAssigned", "==", false)
-//       .where("deliveryStatus", "!=", "completed")
-//       .orderBy("deliveryStatus") // Firestore requires this when using "!="
-//       .orderBy("createdAt", "desc") // Sort by latest createdAt
-//       .get();
-
-//     const deliveries = snapshot.docs.map((doc) => ({
-//       id: doc.id,
-//       ...doc.data(),
-//     }));
-
-//     res.status(200).json({ success: true, deliveries });
-//   }
-// );
-
 export const getUnAssignedDeliveries = catchAsync(
   async (req: Request, res: Response) => {
     const { cursor = null, orderSerial } = req.query;
@@ -319,14 +233,15 @@ export const getUnAssignedDeliveries = catchAsync(
 
     // Build the where conditions
     const whereList: any = [
-      ["isAssigned", "==", false],
+      // ["isAssigned", "==", false],
+      // ["deliveryStatus", "!=", "completed"],
       ["deliveryStatus", "!=", "completed"],
     ];
 
     if (orderSerial) {
       whereList.push(["orderSerial", "==", orderSerial]);
     }
-
+    console.log(whereList);
     const result = await paginateCollection(db, {
       collection: "deliveries",
       pageSize,
@@ -338,8 +253,9 @@ export const getUnAssignedDeliveries = catchAsync(
 
     const countSnap = await db
       .collection("deliveries")
-      .where("isAssigned", "==", false)
-      .where("deliveryStatus", "!=", "completed")
+      // .where("isAssigned", "==", false)
+      // .where("deliveryStatus", "!=", "completed")
+      .where("deliveryStatus", "==", "pending")
       .count()
       .get();
     const totalCount = countSnap.data().count;
@@ -381,22 +297,17 @@ export const updateDelivery = catchAsync(
       "othersDescription", // Included since it's related to othersQuantity
     ]);
 
-    // console.log(
-    //   req.body["bagQuantity"],
-    //   req.body["boxQuantity"],
-    //   req.body["envelopeQuantity"],
-    //   req.body["toteQuantity"]
-    // );
-
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         updateData[field] = req.body[field];
       }
     });
+    // console.log(req.body);
+    // console.log(updateData);
 
-    if (updateData.hasOwnProperty("isAssigned")) {
-      updateData.isAssigned = Boolean(updateData.isAssigned);
-    }
+    // if (updateData.hasOwnProperty("isAssigned")) {
+    //   updateData.isAssigned = Boolean(updateData.isAssigned);
+    // }
 
     // Set othersDescription to null if othersQuantity is 0
     if (
@@ -406,31 +317,13 @@ export const updateDelivery = catchAsync(
       updateData.othersDescription = null;
     }
 
-    //When the driver accepts the delivery on driver side, set the isActive state in the db true for them
-    // if (req.body["driverId"] && req.body["isAssigned"]) {
-    //   // do not use setIsActive func here
-    //   db.collection("users")
-    //     .doc(req.body["driverId"])
-    //     .update({
-    //       isActive: true,
-    //     })
-    //     .then(() => {
-    //       // Optional: Handle success (this runs asynchronously)
-    //       console.log("Driver activation initiated.");
-    //     })
-    //     .catch((error) => {
-    //       // Optional: Handle error (this runs asynchronously)
-    //       console.error("Error initiating driver activation:", error);
-    //     });
-    // }
-    // console.log(req.body["driverId"], req.body["isAssigned"]);
-    // console.log("Delivery status", req.body["deliveryStatus"]);
-
+    //if the delivery is assigned and the status is not completed, set the status to pending
     if (updateData.isAssigned && req.body["deliveryStatus"] !== "completed") {
       updateData["deliveryStatus"] = "pending";
       updateData["unavailabilityReason"] = null;
     }
 
+    // If deliveryStatus is "unavailable", ensure unavailabilityReason is provided
     if (
       req.body["deliveryStatus"] === "unavailable" &&
       "unavailabilityReason" === null
@@ -460,14 +353,11 @@ export const updateDelivery = catchAsync(
       });
     }
 
-    // if (updateData.itemType !== "Other") {
-    //   updateData.itemDescription = null;
-    // }
-
     // 👉 Handle file uploads
     const files = req?.files as any;
     const filePaths: any = {};
-    const basePath = path.join(__dirname, `../../public/delivery/${id}/`);
+    // const basePath = path.join(__dirname, `../../public/delivery/${id}/`);
+    const basePath = getDeliveryFolder(id);
 
     if (!fs.existsSync(basePath)) {
       fs.mkdirSync(basePath, { recursive: true });
@@ -477,7 +367,9 @@ export const updateDelivery = catchAsync(
     let signatureImage: string = "";
     if (files?.signatureImage) {
       const signatureFileName = files.signatureImage[0].originalname;
-      const signatureFilePath = path.join(basePath, signatureFileName);
+      // const signatureFilePath = path.join(basePath, signatureFileName);
+      const deliveryFolder = getDeliveryFolder(id);
+      const signatureFilePath = path.join(deliveryFolder, signatureFileName);
 
       // ❌ Delete existing file if exists
       if (fs.existsSync(signatureFilePath)) {
@@ -487,28 +379,24 @@ export const updateDelivery = catchAsync(
       // ✅ Save new file
       fs.writeFileSync(signatureFilePath, files.signatureImage[0].buffer);
 
-      // Store public URL
-      signatureImage = `/public/delivery/${id}/${signatureFileName}`;
-      filePaths.signatureImage = `/public/delivery/${id}/${signatureFileName}`;
+      signatureImage = getPublicPath(id, signatureFileName);
+      filePaths.signatureImage = signatureImage;
     }
+    let podImages: string[] = [];
+    if (files?.podImage && Array.isArray(files.podImage)) {
+      //@ts-ignore
+      files.podImage.forEach((file, index) => {
+        const fileName = `podImage${index + 1}.png`; // 👈 desired filename
+        const deliveryFolder = getDeliveryFolder(id);
+        // const filePath = path.join(basePath, fileName);
+        const filePath = path.join(deliveryFolder, fileName);
 
-    // 👉 Handle podImage
-    let podImage: string = "";
-    if (files?.podImage) {
-      const podFileName = files.podImage[0].originalname;
-      const podFilePath = path.join(basePath, podFileName);
+        fs.writeFileSync(filePath, file.buffer);
+        // podImages.push(`/public/delivery/${id}/${fileName}`);
+        podImages.push(getPublicPath(id, fileName));
+      });
 
-      // ❌ Delete existing file if exists
-      if (fs.existsSync(podFilePath)) {
-        fs.unlinkSync(podFilePath);
-      }
-
-      // ✅ Save new file
-      fs.writeFileSync(podFilePath, files.podImage[0].buffer);
-
-      // Store public URL
-      podImage = `/public/delivery/${id}/${podFileName}`;
-      filePaths.podImage = `/public/delivery/${id}/${podFileName}`;
+      filePaths.podImages = podImages;
     }
 
     // 👉 Merge file paths into updateData
@@ -533,12 +421,13 @@ export const updateDelivery = catchAsync(
 
       const recipients = [
         req.body["email"],
-        // "info@shippify.net",
+        // "info@pharmahealth.net",
+        // "avihendeles@gmail.com",
       ];
 
       sendEmail(
         recipients.join(","),
-        "From Shippify: Delivery failed",
+        "From PharmaHealth: Delivery failed",
         `<div class="container">
           <h2>Delivery Status Update</h2>
           <p>
@@ -554,40 +443,103 @@ export const updateDelivery = catchAsync(
           <div class="footer">
             <p>
               If you have any questions or need further assistance, please contact us at
-               <a href="mailto:info@shippify.net">info@shippify.net</a>.
+              <a href="mailto:info@pharmahealth.net">info@pharmahealth.net</a>.
             </p>
-            <p>&copy; 2025 Shippify. All rights reserved.</p>
+            <p>&copy; 2025 PharmaHealth. All rights reserved.</p>
           </div>
         </div>`
       ).catch((error) => console.error("Failed to send email:", error));
-
-      // set the isActive status by calculating pending orders
-      // setIsActiveStatus(req.body["driverId"]);
     }
 
     if (req.body["deliveryStatus"] === "completed") {
       const attachments = [];
-
       if (signatureImage) {
-        attachments.push("." + signatureImage);
+        attachments.push(getAbsoluteFilePath(signatureImage));
       }
 
-      if (podImage) {
-        attachments.push("." + podImage);
+      if (podImages.length > 0) {
+        attachments.push(...podImages.map(getAbsoluteFilePath));
       }
 
-      const recipients = [req.body["email"]];
+      const deliveryDoc = (
+        await db.collection("deliveries").doc(id).get()
+      ).data();
+
+      const driverDoc = await db
+        .collection("users")
+        .doc(req.body["driverId"])
+        .get();
+      const driverName = driverDoc.data()?.name || "Unavailable";
+      const emailBody = `
+  <div class="container">
+    <h2>Delivery Completed</h2>
+    <p>Hello <strong>${deliveryDoc?.contactPersonName}</strong>,</p>
+    <p>This is to confirm that the delivery to <strong>${
+      deliveryDoc?.name
+    }</strong> has been successfully completed. Below are the details of your delivery:</p>
+    
+    <div class="details">
+      <p><strong>Order Number:</strong> ${deliveryDoc?.orderSerial}</p>
+      ${
+        deliveryDoc?.bagQuantity
+          ? `<p><strong>Bag Quantity:</strong> ${deliveryDoc?.bagQuantity}</p>`
+          : ""
+      }
+      ${
+        deliveryDoc?.boxQuantity
+          ? `<p><strong>Box Quantity:</strong> ${deliveryDoc?.boxQuantity}</p>`
+          : ""
+      }
+      ${
+        deliveryDoc?.envelopeQuantity
+          ? `<p><strong>Envelope Quantity:</strong> ${deliveryDoc?.envelopeQuantity}</p>`
+          : ""
+      }
+      ${
+        deliveryDoc?.toteQuantity
+          ? `<p><strong>Tote Quantity:</strong> ${deliveryDoc?.toteQuantity}</p>`
+          : ""
+      }
+      ${
+        deliveryDoc?.othersQuantity && deliveryDoc?.othersDescription
+          ? `<p><strong>Description:</strong> ${deliveryDoc?.othersDescription}</p>`
+          : ""
+      }
+      ${
+        deliveryDoc?.othersQuantity
+          ? `<p><strong>Quantity:</strong> ${deliveryDoc?.othersQuantity}</p>`
+          : ""
+      }
+    
+      <p><strong>Address:</strong> ${deliveryDoc?.address}</p>
+      <p><strong>Contact Person:</strong> ${deliveryDoc?.contactPersonName}</p>
+      <p><strong>Contact Phone:</strong> ${deliveryDoc?.contactPersonPhone}</p>
+      <p><strong>Driver name:</strong> ${driverName}</p>
+
+    </div>
+
+    <div class="footer">
+      <p>If you have any questions, feel free to contact us at 
+        <a href="mailto:info@pharmahealth.net">info@pharmahealth.net</a>.
+      </p>
+      <p>&copy; 2025 PharmaHealth. All rights reserved.</p>
+    </div>
+  </div>
+`;
+
+      const recipients = [
+        req.body["email"],
+        // "info@pharmahealth.net",
+        // "avihendeles@gmail.com",
+      ];
       if (attachments.length > 0) {
         sendEmail(
           recipients.join(","),
-          "From Shippify: Delivery completed",
-          `Your delivery with ID ${id} is completed`,
+          "From PharmaHealth: Delivery completed",
+          emailBody,
           attachments
         ).catch((error) => console.error("Failed to send email:", error));
       }
-
-      //set the isActive status by calculating pending orders
-      // setIsActiveStatus(req.body["driverId"]);
     }
 
     res.status(200).json({
@@ -626,18 +578,21 @@ export const getDeliveriesByUserController = catchAsync(
         .json({ success: false, message: "User ID is required" });
     }
 
-    const whereList: any = [["driverId", "==", userId]];
+    const whereList: any = [
+      ["driverId", "==", userId],
+      ["deliveryStatus", "==", "completed"],
+    ];
 
     if (orderSerial) {
       whereList.push(["orderSerial", "==", orderSerial]);
     }
-    if (deliveryStatus) {
-      whereList.push(["deliveryStatus", "==", deliveryStatus]);
-    }
+    // if (deliveryStatus) {
+    //   whereList.push(["deliveryStatus", "==", deliveryStatus]);
+    // }
     const result = await paginateCollection(db, {
       collection: "deliveries",
       pageSize,
-      orderBy: ["createdAt", "desc"],
+      orderBy: ["updatedAt", "desc"],
       cursor: cursor as string,
       where: whereList,
       fetchingUnassignedDeliveries: false,
@@ -662,14 +617,6 @@ export const getDeliveriesByUserController = catchAsync(
       hasNextPage: result.hasNextPage,
       totalCount,
     });
-    // const deliveries = snapshot.docs.map((doc) => ({
-    //   id: doc.id,
-    //   ...doc.data(),
-    // }));
-
-    // // Fetch all deliveries assigned to this user (driver) and sort by `updatedAt` in descending order
-
-    // res.status(200).json({ success: true, deliveries });
   }
 );
 
@@ -720,9 +667,7 @@ export const getUserDeliveryData = catchAsync(
       id: doc.id, // optional: include Firestore doc ID
       ...doc.data(),
     }));
-    // deleteDelivery = del
     let driverData;
-    // console.log(deliveryData);
 
     //@ts-ignore
     if (deliveryData[0].driverId) {

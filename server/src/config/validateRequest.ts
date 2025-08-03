@@ -1,3 +1,10 @@
+/*
+ * Middleware factory that validates the presence of specified fields in the request body.
+ * Returns a middleware function that checks if each field exists;
+ * if any are missing, responds with HTTP 400 and an error message.
+ * Otherwise, it calls `next()` to proceed to the next middleware or route handler.
+ */
+
 import { Request, Response, NextFunction } from "express";
 
 export const validateRequest = (fields: string[]) => {

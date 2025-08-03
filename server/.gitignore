@@ -1,4 +1,5 @@
 node_modules
 dist
 .env
-# dev-sdk-key.json
+/public
+dev-sdk-key.json
