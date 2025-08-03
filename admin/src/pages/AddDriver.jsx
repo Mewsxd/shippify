@@ -12,10 +12,7 @@ const schema = yup.object().shape({
   name: yup.string().required("Driver Name is required"),
   phone: yup
     .number()
-    // .matches(
-    //   /^(?:\d{10}|\d{5}-\d{6})$/,
-    //   "Invalid Phone Number"
-    // )
+    // .matches(/^(?:\d{10}|\d{5}-\d{6})$/, "Invalid Phone Number")
     .required("Phone is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
   password: yup
@@ -28,8 +25,6 @@ const AddDriver = () => {
   const [image, setImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-
-  const navigate = useNavigate();
 
   const {
     register,

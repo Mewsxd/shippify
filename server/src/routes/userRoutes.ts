@@ -5,6 +5,7 @@ import {
   updateUser,
   deleteUser,
   getUserById,
+  resetUserPassword,
 } from "../controller/userController";
 import { validateRequest } from "../config/validateRequest";
 
@@ -19,9 +20,15 @@ router.get("/", getUsers);
 router.get("/:id", getUserById);
 router.put(
   "/:id",
-  validateRequest(["name", "email", "phone", "role", "password"]),
+  validateRequest(["name", "email", "phone", "role"]),
   updateUser
 );
+router.put(
+  "/:id/reset-password",
+  validateRequest(["password"]),
+  resetUserPassword
+);
+
 router.patch("/:id", deleteUser);
 
 export default router;

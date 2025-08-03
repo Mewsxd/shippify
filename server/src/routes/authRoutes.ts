@@ -1,24 +1,39 @@
 import express, { Response } from "express";
 import {
+  commonLoginController,
   loginController,
   logout,
+  meController,
   meDriverController,
+  resetAdminPasswordController,
   userLoginController,
 } from "../controller/authController";
-import { authenticateJWT, AuthRequest } from "../config/verifyAdminMiddleware";
+import {
+  authenticateAdminJWT,
+  authenticateDriverJWT,
+  AuthRequest,
+} from "../config/verifyAdminMiddleware";
 export const authRoutes = express.Router();
 
+//this is the route for the admin to get their details
 authRoutes.get(
   "/me-admin",
-  authenticateJWT,
+  authenticateDriverJWT,
   (req: AuthRequest, res: Response) => {
-    // console.log("hello", req);
     res.status(200).json({ user: req.user });
   }
 );
 
-authRoutes.get("/me-driver", authenticateJWT, meDriverController);
+//this is the route for the driver to get their details
+authRoutes.get("/me", authenticateDriverJWT, meController);
+authRoutes.get("/me-driver", authenticateDriverJWT, meDriverController);
+
 authRoutes.post("/admin-login", loginController);
 authRoutes.post("/logout", logout);
 authRoutes.post("/driver-login", userLoginController);
-// authRoutes.post("/send-email", sendEmail2);
+authRoutes.post("/login", commonLoginController);
+authRoutes.put(
+  "/reset-admin-password",
+  authenticateAdminJWT,
+  resetAdminPasswordController
+);

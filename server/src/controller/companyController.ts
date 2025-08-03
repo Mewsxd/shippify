@@ -3,21 +3,14 @@ import { db } from "../config/firebase";
 import catchAsync from "../utils/catchAsync";
 
 export const createCompany = catchAsync(async (req: Request, res: Response) => {
-  const {
-    name,
-    address,
-    contactPersonPhone,
-    // deliveryType,
-    email,
-    contactPersonName,
-  } = req.body;
+  const { name, address, contactPersonPhone, email, contactPersonName } =
+    req.body;
 
   const newCompany = {
     name,
     address,
     contactPersonPhone,
     contactPersonName,
-    // deliveryType,
     email,
     createdAt: new Date(),
   };

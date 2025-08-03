@@ -19,8 +19,6 @@ export const getDeliveriesPage = async (
   searchTerm = "",
   deliveryStatus = ""
 ) => {
-  // console.log("Fetching deliveries with cursor:", cursor);
-
   try {
     // Build query parameters
     const params = new URLSearchParams();
@@ -121,6 +119,48 @@ export const updateDriver = async ({ data, id }) => {
   return null;
 };
 
+export const resetDriverPassword = async ({ id, newPassword }) => {
+  const req = await fetch(SERVER_URL + "/api/users/" + id + "/reset-password", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+
+    body: JSON.stringify({ password: newPassword }),
+  });
+  if (!req.ok) {
+    throw new Error("Something went wrong while resetting password");
+  }
+  await req.json();
+
+  return null;
+};
+
+export const resetAdminPassword = async ({
+  currentPassword,
+  newPassword,
+  confirmPassword,
+}) => {
+  const req = await fetch(SERVER_URL + "/api/auth/reset-admin-password", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+  });
+  if (!req.ok) {
+    const errorMessage = await req.json();
+    console.log(errorMessage);
+    throw new Error(
+      errorMessage?.message || "Something went wrong while resetting password"
+    );
+  }
+  await req.json();
+
+  return null;
+};
 export const deleteDelivery = async (id) => {
   const req = await fetch(`${SERVER_URL}/api/deliveries/${id}`, {
     method: "DELETE",
@@ -166,6 +206,9 @@ export const deleteDriver = async (id) => {
     credentials: "include",
   });
   if (!req.ok) {
+    const errorMessage = await req.json();
+    console.log(errorMessage);
+
     throw new Error("Something went wrong while deleting driver");
   }
   await req.json();

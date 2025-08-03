@@ -19,6 +19,7 @@ export const sendEmail = async (
   if (!to || !subject || !text) {
     throw new Error("All fields (to, subject, text) are required");
   }
+  console.log("Sending email");
 
   try {
     const attachments = imagePaths?.map((path, index) => ({
@@ -28,27 +29,42 @@ export const sendEmail = async (
     }));
 
     const info = await transporter.sendMail({
-      from: `"Shippify" <${process.env.SMTP_USER}>`,
+      from: `"PharmaHealth" <${process.env.SMTP_USER}>`,
       to,
       subject,
       html: `
-        <div>${text}</div>
-        ${
-          attachments?.length
-            ? attachments
-                .map(
-                  (attachment, index) =>
-                    `<img src="cid:image${index + 1}@deliverx" alt="Image ${
-                      index + 1
-                    }" style="width: 150px; margin-right: 10px; " />`
-                )
-                .join("")
-            : ""
-        }
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; font-size: 16px; color: #333; background-color: #ffffff; padding: 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #ddd; padding: 20px;">
+                <tr>
+                  <td>
+                    ${text}
+                  </td>
+                </tr>
+                ${
+                  attachments?.length
+                    ? `<tr><td style="padding-top: 15px;">` +
+                      attachments
+                        .map(
+                          (attachment, index) =>
+                            `<img src="cid:image${
+                              index + 1
+                            }@deliverx" alt="Image ${
+                              index + 1
+                            }" style="width: 150px; display: block; margin-bottom: 10px;" />`
+                        )
+                        .join("") +
+                      `</td></tr>`
+                    : ""
+                }
+              </table>
+            </td>
+          </tr>
+        </table>
       `,
       attachments,
     });
-
     return info.messageId;
   } catch (error) {
     console.error("Error sending email:", error);
